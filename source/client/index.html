@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PiT Meeting</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- Icon sprite -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
+  <symbol id="i-mic-off" viewBox="0 0 24 24"><line x1="1" y1="1" x2="23" y2="23"/><path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"/><path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2a7 7 0 0 1-.11 1.23"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></symbol>
+  <symbol id="i-video" viewBox="0 0 24 24"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/></symbol>
+  <symbol id="i-video-off" viewBox="0 0 24 24"><path d="M16 16v1a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h2m5.66 0H14a2 2 0 0 1 2 2v3.34l1 1L23 7v10"/><line x1="1" y1="1" x2="23" y2="23"/></symbol>
+  <symbol id="i-chat" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+  <symbol id="i-leave" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></symbol>
+</svg>
+
+<!-- ============ 1. MÀN HÌNH VÀO PHÒNG ============ -->
+<section id="screen-join" class="screen active">
+  <form id="join-form" class="join" autocomplete="off" novalidate>
+    <h1>PiT Meeting</h1>
+
+    <label for="inp-name">Your name:</label>
+    <input id="inp-name" type="text" maxlength="40" value="User">
+
+    <label for="inp-room">Room code:</label>
+    <input id="inp-room" type="text" maxlength="64" value="room1">
+
+    <label for="inp-password">Room password:</label>
+    <input id="inp-password" type="password" maxlength="64" autocomplete="off">
+
+    <label for="inp-server">Server:</label>
+    <input id="inp-server" type="text" value="localhost" spellcheck="false">
+
+    <button id="btn-join" type="submit" class="btn-join">Join Room</button>
+
+    <p id="join-error" class="msg-error" role="alert" hidden></p>
+    <p id="join-warn" class="msg-warn" hidden>
+      Trang đang chạy qua HTTP trên địa chỉ không phải <b>localhost</b> nên trình duyệt sẽ chặn
+      mic/camera. Hãy mở bằng <b>http://localhost:8080</b> hoặc qua HTTPS (ví dụ ngrok).
+      Bạn vẫn có thể vào phòng để chat và xem/nghe người khác.
+    </p>
+  </form>
+</section>
+
+<!-- ============ 2. MÀN HÌNH CHỜ DUYỆT ============ -->
+<section id="screen-wait" class="screen">
+  <div class="join wait">
+    <h1>PiT Meeting</h1>
+    <div class="spinner" aria-hidden="true"></div>
+    <p class="wait-title">Đang chờ chủ phòng chấp nhận…</p>
+    <p class="hint">Phòng: <b id="wait-room"></b></p>
+    <button id="btn-wait-cancel" type="button" class="btn-join">Hủy</button>
+  </div>
+</section>
+
+<!-- ============ 3. PHÒNG HỌP ============ -->
+<section id="screen-room" class="screen">
+  <header class="topbar">
+    <div class="topbar-left">
+      <strong id="room-title">room</strong>
+      <span id="host-badge" class="badge" hidden>Bạn là chủ phòng</span>
+    </div>
+    <div class="topbar-right">
+      <span id="clock" title="Thời gian trong phòng">00:00</span>
+      <span id="count" class="count">1 người</span>
+    </div>
+  </header>
+
+  <!-- Yêu cầu xin vào phòng (chỉ chủ phòng thấy) -->
+  <div id="requests" class="requests" aria-live="polite"></div>
+
+  <div class="stage">
+    <main id="grid" class="grid"></main>
+
+    <aside id="sidebar" class="sidebar" hidden>
+      <div class="side-head">
+        <div class="side-tab46s">
+          <button type="button" class="tab active" data-tab="chat">Trò chuyện</button>
+          <button type="button" class="tab" data-tab="people">Người tham gia <span id="people-count"></span></button>
+        </div>
+        <button type="button" id="btn-side-close" class="icon-btn" title="Đóng">
+          <svg class="ic"><use href="#i-x"/></svg>
+        </button>
+      </div>
+
+      <div id="pane-chat" class="pane active">
+        <div id="chat-log" class="chat-log"></div>
+        <form id="chat-form" class="chat-form" autocomplete="off">
+          <input id="chat-input" type="text" maxlength="2000" placeholder="Nhập tin nhắn…">
+          <button type="submit" class="icon-btn send" title="Gửi">
+            <svg class="ic"><use href="#i-send"/></svg>
+          </button>
+        </form>
+      </div>
+
+      <div id="pane-people" class="pane">
+        <ul id="people-list" class="people"></ul>
+      </div>
+    </aside>
+
+  </div>
+
+  <footer class="controls">
+    <button id="btn-mic" type="button" class="ctl off" title="Bật mic">
+      <svg class="ic"><use href="#i-mic-off"/></svg><span>Mic</span>
+    </button>
+    <button id="btn-cam" type="button" class="ctl off" title="Bật camera">
+      <svg class="ic"><use href="#i-video-off"/></svg><span>Camera</span>
+    </button>
+    <button id="btn-people" type="button" class="ctl" title="Người tham gia">
+      <svg class="ic"><use href="#i-users"/></svg><span>Mọi người</span>
+      <i id="people-dot" class="dot" hidden></i>
+    </button>
+    <button id="btn-chat" type="button" class="ctl" title="Trò chuyện">
+      <svg class="ic"><use href="#i-chat"/></svg><span>Chat</span>
+      <i id="chat-dot" class="dot" hidden></i>
+    </button>
+    <button id="btn-leave" type="button" class="ctl leave" title="Rời phòng">
+      <svg class="ic"><use href="#i-leave"/></svg><span>Rời phòng</span>
+    </button>
+  </footer>
+</section>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
